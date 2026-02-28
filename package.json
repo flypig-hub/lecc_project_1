@@ -1,0 +1,12 @@
+{
+  "name": "lecc_project_1",
+  "version": "1.0.0",
+  "description": "LECC 일본 IT SES 회사 제출용 포트폴리오 프로토타입",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["portfolio", "react", "node", "aws"],
+  "license": "MIT"
+}
