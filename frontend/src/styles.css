@@ -1,0 +1,61 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.card {
+  background: #111827;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+input,
+textarea,
+button {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #475569;
+}
+
+button {
+  background: #0ea5e9;
+  color: white;
+  cursor: pointer;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.post {
+  border-top: 1px solid #334155;
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.comment-box,
+.comment {
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.error-text {
+  color: #fca5a5;
+  font-weight: 600;
+}
