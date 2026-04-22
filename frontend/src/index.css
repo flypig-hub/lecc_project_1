@@ -1,14 +1,14 @@
+@import url("https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&display=swap');
-
 body {
   margin: 0;
-  font-family: 'Courier Prime', 'Courier New', monospace;
+  font-family: "Courier Prime", "Courier New", monospace;
   background-color: #000000;
-  color: #FFD700;
+  color: #ffd700;
 }
 
 * {

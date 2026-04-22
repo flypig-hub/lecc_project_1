@@ -26,7 +26,7 @@ public class ApiResponse<T> {
                 .success(true)
                 .data(data)
                 .message("Operation completed successfully")
-                .timestamp(System.currentTimeMillis())
+                .timestamp(Instant.now())
                 .build();
     }
 
@@ -37,7 +37,7 @@ public class ApiResponse<T> {
         return ApiResponse.<T>builder()
                 .success(false)
                 .message(message)
-                .timestamp(System.currentTimeMillis())
+                .timestamp(Instant.now())
                 .build();
     }
 
@@ -49,7 +49,7 @@ public class ApiResponse<T> {
                 .success(false)
                 .message(message)
                 .data(data)
-                .timestamp(System.currentTimeMillis())
+                .timestamp(Instant.now())
                 .build();
     }
 }

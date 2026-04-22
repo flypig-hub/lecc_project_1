@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+
 /**
  * Base controller providing common functionality for all REST controllers
  */
@@ -21,19 +23,30 @@ public abstract class BaseController {
                 .success(true)
                 .data(data)
                 .message("Operation completed successfully")
-                .timestamp(System.currentTimeMillis())
+                .timestamp(Instant.now())
                 .build());
     }
 
     /**
      * Standardized error response
      */
-    protected <T> ResponseEntity<ApiResponse<T>> error(String message, Object data) {
-        return ResponseEntity.badRequest(ApiResponse.<T>builder()
+    protected <T> ResponseEntity<ApiResponse<T>> error(String message, T data) {
+        return ResponseEntity.status(400).body(ApiResponse.<T>builder()
                 .success(false)
                 .message(message)
-                .data((T) data)
-                .timestamp(System.currentTimeMillis())
+                .data(data)
+                .timestamp(Instant.now())
+                .build());
+    }
+
+    /**
+     * Standardized error response without data
+     */
+    protected <T> ResponseEntity<ApiResponse<T>> error(String message) {
+        return ResponseEntity.status(400).body(ApiResponse.<T>builder()
+                .success(false)
+                .message(message)
+                .timestamp(Instant.now())
                 .build());
     }
 
@@ -41,14 +54,14 @@ public abstract class BaseController {
      * Handle validation errors
      */
     protected <T> ResponseEntity<ApiResponse<T>> validationError(String fieldName, String message) {
-        return error("Validation failed: " + fieldName + " - " + message, null);
+        return error("Validation failed: " + fieldName + " - " + message);
     }
 
     /**
      * Handle resource not found errors
      */
     protected <T> ResponseEntity<ApiResponse<T>> notFound(String resource) {
-        return error(resource + " not found", null);
+        return error(resource + " not found");
     }
 
     /**
@@ -58,7 +71,7 @@ public abstract class BaseController {
         return ResponseEntity.status(401).body(ApiResponse.<T>builder()
                 .success(false)
                 .message(message)
-                .timestamp(System.currentTimeMillis())
+                .timestamp(Instant.now())
                 .build());
     }
 
@@ -69,7 +82,7 @@ public abstract class BaseController {
         return ResponseEntity.status(403).body(ApiResponse.<T>builder()
                 .success(false)
                 .message(message)
-                .timestamp(System.currentTimeMillis())
+                .timestamp(Instant.now())
                 .build());
     }
 
@@ -81,7 +94,7 @@ public abstract class BaseController {
         return ResponseEntity.status(500).body(ApiResponse.<T>builder()
                 .success(false)
                 .message("Internal server error: " + message)
-                .timestamp(System.currentTimeMillis())
+                .timestamp(Instant.now())
                 .build());
     }
 }

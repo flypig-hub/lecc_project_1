@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Global exception handler for standardized error responses
@@ -24,10 +24,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         log.warn("Validation error: {}", ex.getMessage());
-        return ResponseEntity.badRequest(ApiResponse.builder()
+        return ResponseEntity.status(400).body(ApiResponse.builder()
                 .success(false)
                 .message("Validation failed: " + ex.getMessage())
-                .timestamp(LocalDateTime.now())
+                .timestamp(Instant.now())
                 .build());
     }
 
@@ -41,7 +41,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.builder()
                         .success(false)
                         .message(ex.getMessage())
-                        .timestamp(LocalDateTime.now())
+                        .timestamp(Instant.now())
                         .build());
     }
 
@@ -51,10 +51,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Object>> handleIllegalArgument(IllegalArgumentException ex) {
         log.warn("Illegal argument: {}", ex.getMessage());
-        return ResponseEntity.badRequest(ApiResponse.builder()
+        return ResponseEntity.status(400).body(ApiResponse.builder()
                 .success(false)
                 .message("Invalid argument: " + ex.getMessage())
-                .timestamp(LocalDateTime.now())
+                .timestamp(Instant.now())
                 .build());
     }
 
@@ -68,7 +68,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.builder()
                         .success(false)
                         .message("Access denied: " + ex.getMessage())
-                        .timestamp(LocalDateTime.now())
+                        .timestamp(Instant.now())
                         .build());
     }
 
@@ -82,7 +82,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.builder()
                         .success(false)
                         .message("Authentication failed: " + ex.getMessage())
-                        .timestamp(LocalDateTime.now())
+                        .timestamp(Instant.now())
                         .build());
     }
 
@@ -96,7 +96,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.builder()
                         .success(false)
                         .message("Invalid token: " + ex.getMessage())
-                        .timestamp(LocalDateTime.now())
+                        .timestamp(Instant.now())
                         .build());
     }
 
@@ -110,7 +110,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.builder()
                         .success(false)
                         .message("Token expired: " + ex.getMessage())
-                        .timestamp(LocalDateTime.now())
+                        .timestamp(Instant.now())
                         .build());
     }
 
@@ -124,7 +124,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.builder()
                         .success(false)
                         .message("Rate limit exceeded: " + ex.getMessage())
-                        .timestamp(LocalDateTime.now())
+                        .timestamp(Instant.now())
                         .build());
     }
 
@@ -138,7 +138,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.builder()
                         .success(false)
                         .message("Data constraint violation: " + ex.getMessage())
-                        .timestamp(LocalDateTime.now())
+                        .timestamp(Instant.now())
                         .build());
     }
 
@@ -152,7 +152,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.builder()
                         .success(false)
                         .message("Internal server error: " + ex.getMessage())
-                        .timestamp(LocalDateTime.now())
+                        .timestamp(Instant.now())
                         .build());
     }
 
@@ -166,7 +166,7 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.builder()
                         .success(false)
                         .message("An unexpected error occurred")
-                        .timestamp(LocalDateTime.now())
+                        .timestamp(Instant.now())
                         .build());
     }
 }

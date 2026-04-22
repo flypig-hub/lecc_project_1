@@ -61,7 +61,7 @@ public abstract class BaseService<T, ID, R extends JpaRepository<T, ID>> {
      */
     @Transactional(readOnly = true)
     public boolean existsById(ID id) {
-        return repository.existsById(id).orElse(false);
+        return repository.existsById(id);
     }
 
     /**
