@@ -1,0 +1,199 @@
+version: '3.8'
+
+services:
+  # External Database (PostgreSQL or MySQL)
+  postgres:
+    image: postgres:15-alpine
+    container_name: rpgbank-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rpgbank}
+      POSTGRES_USER: ${POSTGRES_USER:-rpgbank_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - rpgbank-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - postgres
+    restart: unless-stopped
+
+  # Alternative MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: rpgbank-mysql
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-rpgbank}
+      MYSQL_USER: ${MYSQL_USER:-rpgbank_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init-mysql.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    networks:
+      - rpgbank-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - mysql
+    restart: unless-stopped
+
+  # Backend Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rpgbank-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: production
+      # PostgreSQL configuration
+      SPRING_DATASOURCE_URL: ${DATABASE_URL:-jdbc:postgresql://postgres:5432/rpgbank}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-rpgbank_user}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      # JWT Configuration
+      SPRING_JWT_SECRET: ${JWT_SECRET}
+      SPRING_JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      # Redis Configuration
+      SPRING_REDIS_HOST: ${REDIS_HOST:-redis}
+      SPRING_REDIS_PORT: ${REDIS_PORT:-6379}
+      SPRING_REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      # Server Configuration
+      SERVER_PORT: ${SERVER_PORT:-8080}
+      # SSL Configuration
+      SERVER_SSL_ENABLED: ${SSL_ENABLED:-false}
+      SERVER_SSL_KEYSTORE: ${SSL_KEYSTORE_PATH:-}
+      SERVER_SSL_KEYSTORE_PASSWORD: ${SSL_KEYSTORE_PASSWORD:-}
+      # Logging Configuration
+      LOGGING_LEVEL: ${LOG_LEVEL:-INFO}
+      LOGGING_FILE_PATH: ${LOG_FILE_PATH:-logs/application.log}
+      # Performance Configuration
+      SPRING_JPA_HIBERNATE_DDL_AUTO: ${DDL_AUTO:-update}
+      SPRING_JPA_SHOW_SQL: ${SHOW_SQL:-false}
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: ${DB_DIALECT:-org.hibernate.dialect.PostgreSQLDialect}
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - rpgbank-network
+    volumes:
+      - backend_logs:/app/logs
+      - ./logs:/var/log/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${SERVER_PORT:-8080}/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: ${MEMORY_LIMIT:-1G}
+          cpus: ${CPU_LIMIT:-0.5}
+        reservations:
+          memory: ${MEMORY_RESERVATION:-512M}
+          cpus: ${CPU_RESERVATION:-0.25}
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: rpgbank-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - rpgbank-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: ${REDIS_MEMORY_LIMIT:-256M}
+          cpus: ${REDIS_CPU_LIMIT:-0.25}
+
+  # Frontend with Nginx
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      container_name: rpgbank-frontend
+    environment:
+      # API Configuration
+      VITE_API_BASE_URL: ${FRONTEND_API_URL:-http://localhost:${SERVER_PORT:-8080}}
+      VITE_APP_NAME: ${APP_NAME:-RPG Bank}
+      VITE_APP_VERSION: ${APP_VERSION:-1.0.0}
+      # SSL Configuration
+      VITE_SSL_ENABLED: ${SSL_ENABLED:-false}
+      # Analytics
+      VITE_ANALYTICS_ID: ${ANALYTICS_ID:-}
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      - backend
+    networks:
+      - rpgbank-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: ${FRONTEND_MEMORY_LIMIT:-256M}
+          cpus: ${FRONTEND_CPU_LIMIT:-0.25}
+
+# Volumes
+volumes:
+  postgres_data:
+    driver: local
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_logs:
+    driver: local
+  redis_config:
+    driver: local
+
+# Networks
+networks:
+  rpgbank-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Volumes
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_logs:
+    driver: local
+
+# Networks
+networks:
+  rpgbank-network:
+    driver: bridge

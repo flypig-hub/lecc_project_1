@@ -1,0 +1,116 @@
+name: Deploy RPG Bank
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/*.gradle') }}
+
+      - name: Run backend tests
+        run: |
+          cd backend
+          ./gradlew test
+
+      - name: Run frontend tests
+        run: |
+          cd frontend
+          npm ci
+          npm run test
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:backend-${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:backend-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:frontend-${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:frontend-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to production
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /opt/rpgbank
+            
+            # Pull latest images
+            docker-compose pull
+            
+            # Stop existing services
+            docker-compose down
+            
+            # Start new services
+            docker-compose up -d
+            
+            # Clean up old images
+            docker image prune -f
+
+      - name: Health check
+        run: |
+          sleep 30
+          curl -f ${{ secrets.PROD_HOST }}/actuator/health || exit 1
